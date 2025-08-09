@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Dino Quiz Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #f7f7f7;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      background: #fff;
+      display: block;
+      margin: 0 auto;
+      border-bottom: 2px solid #ccc;
+    }
+    #questionBox {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border: 2px solid #444;
+      display: none;
+      width: 300px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    #questionBox h3 {
+      margin-top: 0;
+    }
+    #answers button {
+      display: block;
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+      background: #eee;
+      border: 1px solid #aaa;
+      cursor: pointer;
+    }
+    #answers button:hover {
+      background: #ddd;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="200"></canvas>
+<div id="questionBox">
+  <h3 id="questionText">Câu hỏi?</h3>
+  <div id="answers"></div>
+</div>
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let dino = { x: 50, y: 150, w: 40, h: 40, vy: 0, onGround: true };
+  let obstacles = [];
+  let gravity = 0.6;
+  let score = 0;
+  let currentQuestionIndex = 0;
+  let gamePaused = false;
+
+  const questions = [
+    { q: "Câu hỏi 1", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 0 },
+    { q: "Câu hỏi 2", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 1 },
+    { q: "Câu hỏi 3", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 2 },
+    { q: "Câu hỏi 4", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 0 },
+    { q: "Câu hỏi 5", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 1 },
+    { q: "Câu hỏi 6", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 2 },
+    { q: "Câu hỏi 7", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 0 },
+    { q: "Câu hỏi 8", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 1 },
+    { q: "Câu hỏi 9", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 2 },
+    { q: "Câu hỏi 10", options: ["Đáp án 1", "Đáp án 2", "Đáp án 3"], correct: 0 }
+  ];
+
+  function spawnObstacle() {
+    if (currentQuestionIndex < questions.length) {
+      obstacles.push({ x: canvas.width, y: 160, w: 20, h: 40, asked: false });
+    }
+  }
+
+  function update() {
+    if (!gamePaused) {
+      dino.vy += gravity;
+      dino.y += dino.vy;
+      if (dino.y >= 150) {
+        dino.y = 150;
+        dino.vy = 0;
+        dino.onGround = true;
+      }
+
+      for (let obs of obstacles) {
+        obs.x -= 4;
+        if (
+          dino.x < obs.x + obs.w &&
+          dino.x + dino.w > obs.x &&
+          dino.y < obs.y + obs.h &&
+          dino.y + dino.h > obs.y
+        ) {
+          if (!obs.asked) {
+            obs.asked = true;
+            showQuestion();
+            gamePaused = true;
+          }
+        }
+      }
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "green";
+    ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
+
+    ctx.fillStyle = "red";
+    for (let obs of obstacles) {
+      ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+    }
+
+    ctx.fillStyle = "black";
+    ctx.fillText("Score: " + score, 10, 20);
+  }
+
+  function gameLoop() {
+    update();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function jump() {
+    if (dino.onGround) {
+      dino.vy = -10;
+      dino.onGround = false;
+    }
+  }
+
+  function showQuestion() {
+    const qData = questions[currentQuestionIndex];
+    document.getElementById("questionText").innerText = qData.q;
+    const answersDiv = document.getElementById("answers");
+    answersDiv.innerHTML = "";
+    qData.options.forEach((opt, i) => {
+      const btn = document.createElement("button");
+      btn.innerText = opt;
+      btn.onclick = () => handleAnswer(i);
+      answersDiv.appendChild(btn);
+    });
+    document.getElementById("questionBox").style.display = "block";
+  }
+
+  function handleAnswer(selected) {
+    const qData = questions[currentQuestionIndex];
+    if (selected === qData.correct) {
+      score++;
+      currentQuestionIndex++;
+      document.getElementById("questionBox").style.display = "none";
+      gamePaused = false;
+    } else {
+      alert("Sai rồi! Khủng long rơi xuống hố!");
+      location.reload();
+    }
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.code === "Space") {
+      jump();
+    }
+  });
+
+  setInterval(spawnObstacle, 3000);
+  gameLoop();
+</script>
+</body>
+</html>
